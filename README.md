@@ -1,24 +1,43 @@
-# 🏠 Indian House Price Prediction — Full-Stack AI Application
+# 🏠 Indian House Price Prediction
 
-An end-to-end Machine Learning web application that predicts residential property prices across **80+ Indian cities**. Powered by a trained **Random Forest** regression pipeline served via **FastAPI** with a modern **React & Tailwind CSS** frontend and **Docker Compose** container orchestration.
+An end-to-end machine learning project that predicts residential property prices across **80+ Indian cities**, from raw messy listings to a deployed web app.
+
+A **Random Forest** pipeline (preprocessing + model in one artifact) is served by **FastAPI**, with a **React + Tailwind CSS** frontend and **Docker Compose** orchestration.
+
+![Python](https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white)
+![scikit-learn](https://img.shields.io/badge/scikit--learn-ML-F7931E?logo=scikitlearn&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-backend-009688?logo=fastapi&logoColor=white)
+![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=black)
+![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
 
 ---
 
 ## 📌 Table of Contents
 
+- [Highlights](#-highlights)
 - [Project Architecture](#-project-architecture)
 - [Directory Structure](#-directory-structure)
 - [Data Pipeline & Modeling](#-data-pipeline--modeling)
-  - [1. Data Cleaning (`clean_data.py`)](#1-data-cleaning-cleandatapy)
-  - [2. Model Training & Evaluation (`train_model.py`)](#2-model-training--evaluation-trainmodelpy)
+  - [Notebook + Script Workflow](#notebook--script-workflow)
+  - [Features Used by the Model](#features-used-by-the-model)
+  - [Model Results](#model-results)
 - [Backend (FastAPI)](#-backend-fastapi)
 - [Frontend (React + Tailwind CSS)](#-frontend-react--tailwind-css)
-- [Quick Start Guide](#-quick-start-guide)
-  - [Option A: One-Command Python Local Run](#option-a-one-command-python-local-run-easiest)
-  - [Option B: Full-Stack React + FastAPI](#option-b-full-stack-react--fastapi)
-  - [Option C: Docker Compose](#option-c-docker-compose-production-ready)
+- [Quick Start](#-quick-start)
 - [API Reference](#-api-reference)
 - [Running Automated Tests](#-running-automated-tests)
+- [Troubleshooting](#-troubleshooting)
+- [Tech Stack](#-tech-stack)
+
+---
+
+## ✨ Highlights
+
+- **Leakage-safe ML pipeline**: the train/test split happens *before* any outlier capping, imputation, or scaling. Every statistic is learned from the training set only.
+- **Single deployable artifact**: preprocessing and model are saved together, so raw input goes straight into `.predict()`.
+- **Four models compared**: Linear Regression, Ridge, Random Forest, XGBoost. The best by test R² is saved automatically.
+- **Easy to run**: plain Python (FastAPI serves the UI), React + FastAPI, or Docker Compose.
+- **Tested API**: pytest suite covering health, valid, minimal, and invalid payloads.
 
 ---
 
@@ -26,28 +45,31 @@ An end-to-end Machine Learning web application that predicts residential propert
 
 ```mermaid
 flowchart TD
-    subgraph Data & ML Pipeline
-        RawData["house_prices.csv (187k+ rows)"] --> CleanScript["clean_data.py"]
-        CleanScript --> CleanedData["cleaned_house_prices.csv"]
-        CleanedData --> TrainScript["train_model.py"]
-        TrainScript --> SavedModel["models/house_price.pkl"]
+    subgraph Data_and_ML["Data & ML Pipeline"]
+        RawData["house_prices.csv (187k+ rows)"] --> Notebook["01_eda_cleaning_split.ipynb<br/>EDA, cleaning, train/test split"]
+        Notebook --> Split["train_test_split.joblib"]
+        Split --> Modeling["02_modeling.py<br/>outlier capping, pipeline, training"]
+        Modeling --> ModelFile["best_model_random_forest.joblib"]
+        ModelFile -- "copy to" --> SavedModel["backend/models/house_price.pkl"]
     end
 
-    subgraph Backend [FastAPI Service :8000]
-        SavedModel -. Loaded at Lifespan Startup .-> ModelService["app/services/inference.py"]
+    subgraph Backend["FastAPI Service :8000"]
+        SavedModel -. "loaded at startup" .-> ModelService["app/services/inference.py"]
         Request["PredictionRequest JSON"] --> Preproc["app/services/preprocessing.py"]
         Preproc --> ModelService
-        ModelService --> Formatter["Indian Rupee Formatter"]
-        Formatter --> Response["PredictionResponse (Price in Cr / Lakh)"]
+        ModelService --> Formatter["Price formatter"]
+        Formatter --> Response["PredictionResponse"]
     end
 
-    subgraph Frontend [React / Static UI]
-        User["User Form Input"] --> ReactApp["frontend (React + TS + Tailwind) :5173"]
-        User --> DirectUI["backend/app/static/index.html :8000"]
-        ReactApp -- POST /predict --> Backend
-        DirectUI -- POST /predict --> Backend
+    subgraph Frontend["User Interface"]
+        User["User form input"] --> ReactApp["React + TS + Tailwind :5173"]
+        User --> DirectUI["Static UI at :8000"]
+        ReactApp -- "POST /predict" --> Backend
+        DirectUI -- "POST /predict" --> Backend
     end
 ```
+
+The trained pipeline is produced in the project root and then copied into `backend/models/` for the API to load.
 
 ---
 
@@ -57,166 +79,208 @@ flowchart TD
 .
 ├── backend/
 │   ├── app/
-│   │   ├── api/
-│   │   │   └── routes/
-│   │   │       └── prediction.py      # GET /health, POST /predict endpoints
-│   │   ├── core/
-│   │   │   └── config.py              # Environment configuration (pydantic-settings)
-│   │   ├── schemas/
-│   │   │   └── prediction.py          # Pydantic validation schemas
+│   │   ├── api/routes/prediction.py   # GET /health, POST /predict
+│   │   ├── core/config.py             # Environment config (pydantic-settings)
+│   │   ├── schemas/prediction.py      # Pydantic validation schemas
 │   │   ├── services/
-│   │   │   ├── preprocessing.py       # Payload to single-row DataFrame transformation
-│   │   │   └── inference.py           # Model singleton loader & prediction runner
-│   │   ├── static/
-│   │   │   └── index.html             # Direct web UI served at GET /
-│   │   ├── utils/
-│   │   │   └── logging_config.py      # Structured console logger
-│   │   └── main.py                    # FastAPI entrypoint with lifespan startup
-│   ├── models/
-│   │   └── house_price.pkl            # Trained scikit-learn pipeline artifact
-│   ├── tests/
-│   │   └── test_prediction.py         # Pytest test suite for health & prediction
-│   ├── .env.example                   # Sample environment configuration
-│   ├── .env                           # Local environment variables
-│   ├── Dockerfile                     # Python 3.11-slim container definition
-│   └── requirements.txt               # Backend Python dependencies
+│   │   │   ├── preprocessing.py       # Payload -> single-row DataFrame
+│   │   │   └── inference.py           # Model singleton loader & prediction
+│   │   ├── static/index.html          # Direct web UI served at GET /
+│   │   ├── utils/logging_config.py    # Structured console logger
+│   │   └── main.py                    # FastAPI entrypoint (lifespan startup)
+│   ├── models/house_price.pkl         # Trained scikit-learn pipeline
+│   ├── tests/test_prediction.py       # Pytest suite
+│   ├── .env.example                   # Sample environment config
+│   ├── Dockerfile                     # Python 3.11-slim image
+│   └── requirements.txt
 │
 ├── frontend/
 │   ├── src/
-│   │   ├── api/
-│   │   │   └── predictionClient.ts    # Typed fetch client with VITE_API_BASE_URL
-│   │   ├── components/
-│   │   │   └── PredictionForm.tsx     # Property valuation input form
-│   │   ├── pages/
-│   │   │   ├── HomePage.tsx           # Landing page with form
-│   │   │   ├── ResultPage.tsx         # Valuation display & summary breakdown
-│   │   │   └── NotFoundPage.tsx       # 404 page
-│   │   ├── types/
-│   │   │   └── prediction.ts          # TypeScript type definitions
-│   │   ├── App.tsx                    # React Router (/, /result, *)
-│   │   ├── index.css                  # Tailwind CSS styles
-│   │   └── main.tsx                   # React root entrypoint
-│   ├── index.html                     # HTML shell
-│   ├── nginx.conf                     # Nginx SPA web server config
-│   ├── package.json                   # Dependencies & npm scripts
-│   ├── tailwind.config.js             # Tailwind configuration
-│   ├── vite.config.ts                 # Vite bundler configuration
+│   │   ├── api/predictionClient.ts    # Typed fetch client (VITE_API_BASE_URL)
+│   │   ├── components/PredictionForm.tsx
+│   │   ├── pages/                     # HomePage, ResultPage, NotFoundPage
+│   │   ├── types/prediction.ts
+│   │   ├── App.tsx                    # Routes: /, /result, *
+│   │   ├── index.css                  # Tailwind styles
+│   │   └── main.tsx
+│   ├── index.html
+│   ├── nginx.conf                     # SPA web server config
+│   ├── package.json
+│   ├── tailwind.config.js
+│   ├── vite.config.ts
 │   └── Dockerfile                     # Multi-stage build (Node -> Nginx)
 │
-├── clean_data.py                      # Standalone data cleaning & feature engineering script
-├── train_model.py                     # Standalone ML training & evaluation script
+├── 01_eda_cleaning_split.ipynb        # Part 1: setup -> cleaning -> train/test split
+├── 02_modeling.py                     # Part 2: outliers -> pipeline -> models -> save
 ├── house_prices.csv                   # Raw dataset
-├── cleaned_house_prices.csv           # Cleaned processed dataset
-├── EDA_cleaned.ipynb                  # Original exploration notebook
-└── docker-compose.yml                 # Orchestrates backend & frontend containers
+├── train_test_split.joblib            # Generated by 01, consumed by 02
+├── best_model_random_forest.joblib    # Generated by 02 (full fitted pipeline)
+└── README.md
 ```
 
 ---
 
 ## 🔬 Data Pipeline & Modeling
 
-### 1. Data Cleaning (`clean_data.py`)
-Cleans and standardizes raw real estate listings:
-- **Location Extraction**: Extracts neighborhood slugs and society names from listing titles (`location_raw`, `locality`).
-- **Currency Normalization**: Parses textual currency (`"42 Lac"`, `"1.4 Cr"`) into continuous numeric rupees.
-- **Area Standardization**: Standardizes mixed units (`sqyrd`, `sqft`) to uniform square feet (`carpet_area`, `super_area`).
-- **Building Metrics**: Parses floor strings (`"10 out of 11"`) into `floor_number`, `building_height`, and derived `floor_ratio`.
-- **Discrete Features**: Cleans string annotations (e.g. `"> 5"`) for `bathroom`, `balcony`, and `parking_count`.
+### Notebook + Script Workflow
+
+The original notebook is split at the train/test boundary, so everything before the split is exploratory and everything after it is leakage-sensitive.
+
+| File | Sections | What it does |
+|---|---|---|
+| `01_eda_cleaning_split.ipynb` | 1 to 6 | Load data, inspect, drop useless columns, clean every column, visualize, **train/test split**. Ends by saving the split to `train_test_split.joblib`. |
+| `02_modeling.py` | 7 to 13 | Load the split, cap outliers, build the `ColumnTransformer`, train and compare models, save the best pipeline. |
 
 ```bash
-python clean_data.py --input house_prices.csv --output cleaned_house_prices.csv
+# 1. Run every cell of the notebook (writes train_test_split.joblib)
+jupyter notebook 01_eda_cleaning_split.ipynb
+
+# 2. Run the modeling script from the SAME folder
+python 02_modeling.py
 ```
 
-### 2. Model Training & Evaluation (`train_model.py`)
-- **Leakage Prevention**: 80/20 train/test split before computing any statistical bounds.
-- **Outlier Capping**: Target variable `y_train` and continuous features are capped using IQR bounds derived **strictly** from the training set.
-- **Modular `ColumnTransformer` Preprocessing**:
-  - `num_pipe`: Median Imputation + `StandardScaler`
-  - `ord_pipe`: Most Frequent Imputation + `OrdinalEncoder`
-  - `ohe_pipe`: Constant Imputation (`"Missing"`) + `OneHotEncoder`
-  - `high_cat_pipe`: Constant Imputation + `OrdinalEncoder`
-- **Candidate Models Evaluated**:
-  - Linear Regression
-  - Ridge Regression
-  - Random Forest Regressor ($R^2 \approx 0.8908$) — **Selected as Best Model**
-  - XGBoost Regressor ($R^2 \approx 0.8805$)
-- **Artifact Export**: Complete fitted pipeline saved to `backend/models/house_price.pkl` with assertion verification.
+> **Run from the project folder.** Both files use relative paths (`house_prices.csv`, `train_test_split.joblib`, the saved model). If you launch from another directory you will get a `FileNotFoundError`. See [Troubleshooting](#-troubleshooting).
 
-```bash
-python train_model.py --input cleaned_house_prices.csv --output-model-prefix best_model
-```
+**What happens in the notebook (1 to 6):**
+
+1. **Setup & loading**: read `house_prices.csv`.
+2. **Inspection**: dtypes, summary statistics, missingness.
+3. **Drop useless columns**: `Index` (row counter), `Dimensions` and `Plot Area` (100% missing).
+4. **Column-by-column cleaning & feature engineering**:
+   - **Location**: extract `location_raw` from the listing title and derive `locality` (society prefix removed).
+   - **Currency**: parse `"42 Lac"` / `"1.40 Cr"` into rupees (`Lac` = 1e5, `Cr` = 1e7).
+   - **Area**: convert `sqft` and `sqyrd` (1 sqyrd = 9 sqft) to square feet for `carpet_area` and `super_area`.
+   - **Floor**: split `"10 out of 11"` into `floor_number` and `building_height`, plus a derived `floor_ratio`. `Ground` = 0, `Upper Basement` = -1, `Lower Basement` = -2.
+   - **Discrete counts**: clean `"> 5"` style values in `bathroom` and `balcony`; split `car_parking` into `parking_count` (values above 10 treated as data-entry errors).
+   - **Overlooking**: remove `"Not Available"` and sort values so `"A, B"` equals `"B, A"`.
+5. **Exploratory visualization**: histograms, boxplots, category counts, mean price by category, correlation heatmap.
+6. **Train/test split** (80/20, `random_state=42`): rows with a missing target are dropped, redundant columns are removed (`car_parking`, `parking_type`, `title`, `amount_in_rupees`, `society`), then the data is split. `amount_in_rupees` is removed because it duplicates the target's information.
+
+**What happens in the script (7 to 13):**
+
+7. **Target outlier handling**: IQR bounds computed on `y_train` only, then applied to both `y_train` and `y_test`.
+8. **Feature outlier handling**: IQR capping for continuous features (bounds learned from `X_train`), plus threshold caps: `bathroom` ≤ 5, `balcony` ≤ 5, `parking_count` ≤ 3.
+9. **Re-visualization** after capping.
+10. **Preprocessing pipeline** (`ColumnTransformer`), described below.
+11. **Training & evaluation** of four models.
+12. **Save the best model** by test R² with `joblib`, then reload it and assert the predictions match.
+13. **Summary & key takeaways**.
+
+### Features Used by the Model
+
+| Group | Features | Preprocessing |
+|---|---|---|
+| **Numeric** | `carpet_area`, `super_area`, `floor_number`, `building_height`, `floor_ratio`, `parking_count` | Median imputation + `StandardScaler` |
+| **Ordinal** | `furnishing`, `bathroom`, `balcony` | Most-frequent imputation + `OrdinalEncoder` |
+| **Low-cardinality categorical** | `transaction`, `facing`, `ownership` | Constant imputation (`"Missing"`) + `OneHotEncoder` |
+| **High-cardinality categorical** | `location`, `locality`, `overlooking`, `location_raw` | Constant imputation (`"Missing"`) + `OrdinalEncoder` |
+
+Unknown categories at prediction time are handled safely (`OneHotEncoder` ignores them; `OrdinalEncoder` maps them to -1).
+
+### Model Results
+
+All four models are wrapped with the same `preprocessor` in a single `Pipeline`, so preprocessing is fit on training data only.
+
+| Model | Test R² |
+|---|---|
+| Linear Regression | ~0.23 |
+| Ridge | ~0.23 |
+| **Random Forest** (selected) | **~0.89** |
+| XGBoost | ~0.88 |
+
+Exact figures vary slightly between runs. The comparison table printed at the end of training includes train and test R², RMSE, and MAE.
 
 ---
 
 ## ⚙️ Backend (FastAPI)
 
-- **Model Lifecycle**: Loads the 67MB pipeline artifact once at startup into memory using FastAPI's `lifespan` context manager.
-- **Settings Management**: Type-safe configuration via `pydantic-settings` reading from `.env`.
-- **Preprocessing Service**: Transforms raw JSON requests into a single-row Pandas DataFrame matching exact column ordering expected by `ColumnTransformer`.
-- **Currency Formatter**: Automatically converts numeric output into Indian numbering notation (e.g., `₹1.25 Cr` or `₹45.50 Lakh`).
+- **Model lifecycle**: the pipeline artifact is loaded once at startup into memory through FastAPI's `lifespan` context manager.
+- **Settings**: type-safe configuration with `pydantic-settings`, read from `.env`.
+- **Preprocessing service**: turns the JSON request into a single-row DataFrame whose columns match the order the `ColumnTransformer` expects.
+- **Response formatting**: the numeric prediction is returned alongside a formatted ₹ string.
 
 ---
 
 ## 🎨 Frontend (React + Tailwind CSS)
 
-- **Interactive Calculator Form**: Grouped into Location, Size, Layout, Building, and Property Details sections.
-- **City Autocomplete**: Real-time filtering across 80+ supported Indian cities.
-- **Dynamic Calculation**: Real-time server-side and client-side `floor_ratio` calculation.
-- **React Router Navigation**: Routes for `/` (estimator), `/result` (price display & summary), and `*` (404).
+- **Valuation form**: grouped into Location, Size, Layout, Building, and Property Details sections.
+- **City autocomplete**: real-time filtering across 80+ supported Indian cities.
+- **Live `floor_ratio`**: calculated as you type, and again server-side.
+- **Routing**: `/` (estimator), `/result` (price and summary), `*` (404).
 
 ---
 
-## 🚀 Quick Start Guide
+## 🚀 Quick Start
 
-### Option A: One-Command Python Local Run (Easiest)
+### Step 0: Put the trained model where the backend expects it
 
-1. Open your terminal in the project root:
-   ```bash
-   cd backend
-   pip install -r requirements.txt
-   python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-   ```
-2. Open your browser:
-   - 🌐 **Interactive Web App**: [http://localhost:8000](http://localhost:8000)
-   - 📄 **Interactive Swagger API Docs**: [http://localhost:8000/docs](http://localhost:8000/docs)
+After running `02_modeling.py`, copy the model into the backend (a `.pkl` extension is fine; it is the same joblib file):
 
----
+```powershell
+# from the project root (Windows PowerShell)
+New-Item -ItemType Directory -Force backend\models | Out-Null
+Copy-Item best_model_random_forest.joblib backend\models\house_price.pkl
+```
 
-### Option B: Full-Stack React + FastAPI
+```bash
+# macOS / Linux
+mkdir -p backend/models && cp best_model_random_forest.joblib backend/models/house_price.pkl
+```
 
-**Terminal 1 (Backend):**
+Skip this step if `backend/models/house_price.pkl` already exists.
+
+### Option A: Python only (easiest)
+
+```bash
+cd backend
+pip install -r requirements.txt
+python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+- 🌐 Web app: http://localhost:8000
+- 📄 Swagger docs: http://localhost:8000/docs
+- ✅ Health check: http://localhost:8000/health (should show `"model_loaded": true`)
+
+Keep the terminal open while using the site. Stop the server with `Ctrl + C`.
+
+### Option B: React + FastAPI
+
+**Terminal 1 (backend):**
 ```bash
 cd backend
 python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-**Terminal 2 (Frontend):**
+**Terminal 2 (frontend):**
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
-- 🌐 **Frontend**: [http://localhost:5173](http://localhost:5173)
 
----
+- 🌐 Frontend: http://localhost:5173
 
-### Option C: Docker Compose (Production Ready)
+### Option C: Docker Compose (production-ready)
 
-Run the entire containerized stack with a single command:
+Requires a `docker-compose.yml` in the project root.
+
 ```bash
 docker compose up --build
 ```
-- 🌐 **Frontend (Nginx)**: [http://localhost:5173](http://localhost:5173) or [http://localhost](http://localhost)
-- ⚙️ **Backend API**: [http://localhost:8000](http://localhost:8000)
 
-*(To stop the containers, press `Ctrl + C` or run `docker compose down`)*
+- 🌐 Frontend (Nginx): http://localhost:5173 or http://localhost
+- ⚙️ Backend API: http://localhost:8000
+
+Stop with `Ctrl + C` or `docker compose down`.
 
 ---
 
 ## 📖 API Reference
 
 ### `GET /health`
+
 Returns system status and model readiness.
+
 ```json
 {
   "status": "ok",
@@ -225,9 +289,11 @@ Returns system status and model readiness.
 ```
 
 ### `POST /predict`
+
 Accepts property attributes and returns the predicted price.
 
-**Sample Request Body:**
+**Request body:**
+
 ```json
 {
   "location": "mumbai",
@@ -248,7 +314,8 @@ Accepts property attributes and returns the predicted price.
 }
 ```
 
-**Sample Response:**
+**Response:**
+
 ```json
 {
   "predicted_price": 15685.33,
@@ -256,28 +323,53 @@ Accepts property attributes and returns the predicted price.
 }
 ```
 
+Missing optional fields are handled by the pipeline's imputers; missing required fields return a `422`.
+
 ---
 
 ## 🧪 Running Automated Tests
-
-Run the backend integration test suite with `pytest`:
 
 ```bash
 cd backend
 python -m pytest tests/test_prediction.py -v
 ```
 
-**Test Coverage Includes:**
-- ✅ `test_health_check`: Validates `/health` status and model lifecycle.
-- ✅ `test_predict_valid_payload`: Tests end-to-end prediction on a complete feature set.
-- ✅ `test_predict_minimal_payload`: Tests pipeline imputation with optional/missing fields.
-- ✅ `test_predict_invalid_payload_missing_required`: Validates 422 error on missing required fields.
+| Test | Checks |
+|---|---|
+| `test_health_check` | `/health` status and model lifecycle |
+| `test_predict_valid_payload` | End-to-end prediction on a complete feature set |
+| `test_predict_minimal_payload` | Imputation with optional or missing fields |
+| `test_predict_invalid_payload_missing_required` | `422` on missing required fields |
+
+---
+
+## 🛠 Troubleshooting
+
+**`FileNotFoundError: train_test_split.joblib` (or `house_prices.csv`)**
+Relative paths resolve against the folder your terminal is in, not the folder the script lives in. Change into the project folder first:
+
+```bash
+cd "path/to/project"
+python 02_modeling.py
+```
+
+**`02_modeling.py` fails on load**
+Run `01_eda_cleaning_split.ipynb` end to end first. The script depends on the `train_test_split.joblib` file its last cell creates.
+
+**Saved model lands in the wrong folder**
+The model is saved relative to the current working directory. Run from the project folder, then copy it to `backend/models/house_price.pkl` (see Step 0).
+
+**Health check shows `"model_loaded": false`, or the server fails at startup**
+Make sure `backend/models/house_price.pkl` exists, and that the backend's `scikit-learn` and `xgboost` versions match the ones used to train the model. A model pickled with one version may not load under a very different one.
+
+**Port 8000 already in use**
+Start on another port, e.g. `--port 8001`, and open that port instead.
 
 ---
 
 ## 👨‍💻 Tech Stack
 
-- **ML & Data Science**: `scikit-learn`, `xgboost`, `pandas`, `numpy`, `joblib`, `scipy`
-- **Backend API**: `FastAPI`, `Pydantic v2`, `pydantic-settings`, `uvicorn`, `pytest`, `httpx`
+- **ML & data science**: `scikit-learn`, `xgboost`, `pandas`, `numpy`, `scipy`, `matplotlib`, `seaborn`, `joblib`
+- **Backend**: `FastAPI`, `Pydantic v2`, `pydantic-settings`, `uvicorn`, `pytest`, `httpx`
 - **Frontend**: `React 18`, `TypeScript`, `Tailwind CSS`, `React Router v6`, `Vite`
 - **DevOps**: `Docker`, `Docker Compose`, `Nginx`

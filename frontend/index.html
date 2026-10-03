@@ -1,16 +1,1258 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>PropValuate AI — House Price Estimator</title>
-    <meta name="description" content="AI-powered house price valuation system for properties across India." />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
-  </head>
-  <body class="bg-slate-950 text-slate-100 min-h-screen">
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>House Price Predictor — AI-Powered Real Estate Estimator</title>
+  <meta name="description" content="Get instant AI-powered house price predictions for properties across India. Enter property details and receive an accurate price estimate." />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ------------------------------------------------------------------ */
+    /* Design System Tokens                                                */
+    /* ------------------------------------------------------------------ */
+    :root {
+      /* Palette */
+      --bg-base: #0b0f1a;
+      --bg-card: #111827;
+      --bg-card-hover: #1a2235;
+      --bg-input: #0f172a;
+      --bg-input-focus: #131d33;
+
+      --border: #1e293b;
+      --border-focus: #6366f1;
+      --border-hover: #334155;
+
+      --text-primary: #f1f5f9;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --text-label: #cbd5e1;
+
+      --accent: #6366f1;
+      --accent-hover: #818cf8;
+      --accent-glow: rgba(99, 102, 241, 0.25);
+
+      --success: #10b981;
+      --success-bg: rgba(16, 185, 129, 0.08);
+      --success-border: rgba(16, 185, 129, 0.25);
+
+      --error: #ef4444;
+      --error-bg: rgba(239, 68, 68, 0.08);
+      --error-border: rgba(239, 68, 68, 0.25);
+
+      --warning: #f59e0b;
+
+      /* Gradients */
+      --gradient-accent: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a78bfa 100%);
+      --gradient-card: linear-gradient(145deg, rgba(17, 24, 39, 0.9), rgba(15, 23, 42, 0.95));
+      --gradient-hero: linear-gradient(135deg, #0b0f1a 0%, #111827 50%, #0f172a 100%);
+
+      /* Shadows */
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25);
+      --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.35);
+      --shadow-glow: 0 0 40px var(--accent-glow);
+
+      /* Radius */
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-xl: 20px;
+      --radius-full: 9999px;
+
+      /* Transitions */
+      --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+      --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+      --transition-slow: 400ms cubic-bezier(0.4, 0, 0.2, 1);
+
+      /* Typography */
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Global Reset & Base                                                 */
+    /* ------------------------------------------------------------------ */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--bg-base);
+      color: var(--text-primary);
+      line-height: 1.6;
+      min-height: 100vh;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* Animated background mesh */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      z-index: -2;
+      background:
+        radial-gradient(ellipse 80% 50% at 50% -20%, rgba(99, 102, 241, 0.12) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 40% at 80% 60%, rgba(139, 92, 246, 0.06) 0%, transparent 50%),
+        radial-gradient(ellipse 50% 30% at 20% 80%, rgba(99, 102, 241, 0.05) 0%, transparent 50%);
+    }
+
+    /* Subtle grid pattern */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      background-image: 
+        linear-gradient(rgba(99, 102, 241, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(99, 102, 241, 0.03) 1px, transparent 1px);
+      background-size: 60px 60px;
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Layout                                                              */
+    /* ------------------------------------------------------------------ */
+    .app-container {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 32px 24px 64px;
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Header                                                              */
+    /* ------------------------------------------------------------------ */
+    .header {
+      text-align: center;
+      margin-bottom: 40px;
+      animation: fadeSlideDown 0.8s ease-out;
+    }
+
+    .header__badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      background: rgba(99, 102, 241, 0.1);
+      border: 1px solid rgba(99, 102, 241, 0.2);
+      border-radius: var(--radius-full);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--accent-hover);
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+
+    .header__badge .dot {
+      width: 6px; height: 6px;
+      background: var(--success);
+      border-radius: 50%;
+      animation: pulse-dot 2s infinite;
+    }
+
+    .header__title {
+      font-size: clamp(28px, 5vw, 42px);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      background: linear-gradient(135deg, var(--text-primary) 0%, var(--accent-hover) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1.15;
+      margin-bottom: 10px;
+    }
+
+    .header__subtitle {
+      font-size: 15px;
+      color: var(--text-secondary);
+      max-width: 520px;
+      margin: 0 auto;
+      font-weight: 400;
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Section Card                                                        */
+    /* ------------------------------------------------------------------ */
+    .section-card {
+      background: var(--gradient-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 28px;
+      margin-bottom: 20px;
+      backdrop-filter: blur(12px);
+      transition: border-color var(--transition-base), box-shadow var(--transition-base);
+      animation: fadeSlideUp 0.6s ease-out backwards;
+    }
+
+    .section-card:nth-child(1) { animation-delay: 0.1s; }
+    .section-card:nth-child(2) { animation-delay: 0.15s; }
+    .section-card:nth-child(3) { animation-delay: 0.2s; }
+    .section-card:nth-child(4) { animation-delay: 0.25s; }
+    .section-card:nth-child(5) { animation-delay: 0.3s; }
+
+    .section-card:hover {
+      border-color: var(--border-hover);
+    }
+
+    .section-card__header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 22px;
+    }
+
+    .section-card__icon {
+      width: 38px; height: 38px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(99, 102, 241, 0.1);
+      border: 1px solid rgba(99, 102, 241, 0.15);
+      border-radius: var(--radius-sm);
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+
+    .section-card__title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: -0.01em;
+    }
+
+    .section-card__desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      font-weight: 400;
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Form Grid                                                           */
+    /* ------------------------------------------------------------------ */
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .form-grid.cols-3 {
+      grid-template-columns: 1fr 1fr 1fr;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .form-group.full-width {
+      grid-column: 1 / -1;
+    }
+
+    .form-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-label);
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .form-label .required {
+      color: var(--error);
+      font-size: 14px;
+    }
+
+    .form-label .optional {
+      font-size: 11px;
+      font-weight: 400;
+      color: var(--text-muted);
+      margin-left: 4px;
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Inputs & Selects                                                    */
+    /* ------------------------------------------------------------------ */
+    .input-wrapper {
+      position: relative;
+    }
+
+    .input-wrapper .unit {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      pointer-events: none;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    select {
+      width: 100%;
+      height: 44px;
+      padding: 0 14px;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      font-size: 14px;
+      transition: all var(--transition-fast);
+      outline: none;
+      appearance: none;
+    }
+
+    input[type="number"] { font-family: var(--font-mono); font-weight: 500; }
+
+    .input-wrapper.has-unit input {
+      padding-right: 52px;
+    }
+
+    input::placeholder { color: var(--text-muted); }
+
+    input:hover, select:hover {
+      border-color: var(--border-hover);
+    }
+
+    input:focus, select:focus {
+      border-color: var(--border-focus);
+      background: var(--bg-input-focus);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    input.error, select.error {
+      border-color: var(--error);
+      box-shadow: 0 0 0 3px var(--error-bg);
+    }
+
+    /* Custom select arrow */
+    select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      padding-right: 36px;
+      cursor: pointer;
+    }
+
+    select option {
+      background: var(--bg-card);
+      color: var(--text-primary);
+    }
+
+    /* Datalist styling */
+    input::-webkit-calendar-picker-indicator { display: none !important; }
+
+    .validation-msg {
+      font-size: 12px;
+      color: var(--error);
+      margin-top: 4px;
+      min-height: 16px;
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Stepper / Number Input Group                                        */
+    /* ------------------------------------------------------------------ */
+    .stepper {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      height: 44px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      transition: border-color var(--transition-fast);
+    }
+
+    .stepper:hover { border-color: var(--border-hover); }
+    .stepper:focus-within { border-color: var(--border-focus); box-shadow: 0 0 0 3px var(--accent-glow); }
+
+    .stepper button {
+      width: 40px;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(99, 102, 241, 0.05);
+      border: none;
+      color: var(--accent-hover);
+      font-size: 18px;
+      cursor: pointer;
+      transition: background var(--transition-fast);
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+
+    .stepper button:hover { background: rgba(99, 102, 241, 0.12); }
+    .stepper button:active { background: rgba(99, 102, 241, 0.2); }
+
+    .stepper input {
+      width: 100%;
+      height: 100%;
+      border: none;
+      border-left: 1px solid var(--border);
+      border-right: 1px solid var(--border);
+      border-radius: 0;
+      text-align: center;
+      background: var(--bg-input);
+      font-family: var(--font-mono);
+      font-weight: 600;
+      font-size: 15px;
+      color: var(--text-primary);
+    }
+
+    .stepper input:focus { box-shadow: none; background: var(--bg-input-focus); }
+
+    /* ------------------------------------------------------------------ */
+    /* Auto-calculated field                                               */
+    /* ------------------------------------------------------------------ */
+    .computed-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 8px 14px;
+      background: rgba(99, 102, 241, 0.06);
+      border: 1px dashed rgba(99, 102, 241, 0.25);
+      border-radius: var(--radius-sm);
+      font-family: var(--font-mono);
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--accent-hover);
+      height: 44px;
+    }
+
+    .computed-badge .eq { color: var(--text-muted); font-size: 12px; }
+
+    /* ------------------------------------------------------------------ */
+    /* Submit Button                                                       */
+    /* ------------------------------------------------------------------ */
+    .submit-section {
+      text-align: center;
+      margin-top: 28px;
+      animation: fadeSlideUp 0.6s ease-out backwards;
+      animation-delay: 0.35s;
+    }
+
+    .btn-predict {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      max-width: 420px;
+      height: 54px;
+      background: var(--gradient-accent);
+      border: none;
+      border-radius: var(--radius-md);
+      color: white;
+      font-family: var(--font-sans);
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+      overflow: hidden;
+      transition: all var(--transition-base);
+      box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3);
+    }
+
+    .btn-predict:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(99, 102, 241, 0.4);
+    }
+
+    .btn-predict:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    .btn-predict:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .btn-predict::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.1) 50%, transparent 100%);
+      transform: translateX(-100%);
+      transition: transform 0.6s ease;
+    }
+
+    .btn-predict:hover:not(:disabled)::before {
+      transform: translateX(100%);
+    }
+
+    /* Loading spinner */
+    .spinner {
+      width: 20px; height: 20px;
+      border: 2.5px solid rgba(255,255,255,0.25);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Result Card                                                         */
+    /* ------------------------------------------------------------------ */
+    .result-card {
+      margin-top: 24px;
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      animation: fadeScaleUp 0.5s ease-out;
+    }
+
+    .result-card--success {
+      background: var(--success-bg);
+      border: 1px solid var(--success-border);
+    }
+
+    .result-card--error {
+      background: var(--error-bg);
+      border: 1px solid var(--error-border);
+    }
+
+    .result-card__inner {
+      padding: 32px;
+      text-align: center;
+    }
+
+    .result-card__label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+
+    .result-card__price {
+      font-size: clamp(32px, 6vw, 48px);
+      font-weight: 900;
+      letter-spacing: -0.02em;
+      background: linear-gradient(135deg, var(--success) 0%, #34d399 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1.2;
+      margin-bottom: 4px;
+    }
+
+    .result-card__raw {
+      font-size: 14px;
+      font-family: var(--font-mono);
+      color: var(--text-muted);
+    }
+
+    .result-card__error-text {
+      font-size: 15px;
+      color: var(--error);
+      font-weight: 500;
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Footer                                                              */
+    /* ------------------------------------------------------------------ */
+    .footer {
+      text-align: center;
+      margin-top: 48px;
+      padding-top: 24px;
+      border-top: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+
+    .footer a { color: var(--accent-hover); text-decoration: none; }
+    .footer a:hover { text-decoration: underline; }
+
+    /* ------------------------------------------------------------------ */
+    /* Animations                                                          */
+    /* ------------------------------------------------------------------ */
+    @keyframes fadeSlideDown {
+      from { opacity: 0; transform: translateY(-20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes fadeSlideUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes fadeScaleUp {
+      from { opacity: 0; transform: scale(0.95); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; }
+      50%      { opacity: 0.4; }
+    }
+
+    @keyframes shimmer {
+      0%   { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Responsive                                                          */
+    /* ------------------------------------------------------------------ */
+    @media (max-width: 640px) {
+      .app-container { padding: 20px 16px 48px; }
+      .section-card  { padding: 20px; }
+      .form-grid     { grid-template-columns: 1fr; }
+      .form-grid.cols-3 { grid-template-columns: 1fr; }
+    }
+
+    @media (min-width: 641px) and (max-width: 768px) {
+      .form-grid.cols-3 { grid-template-columns: 1fr 1fr; }
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Autocomplete dropdown                                               */
+    /* ------------------------------------------------------------------ */
+    .autocomplete-wrapper {
+      position: relative;
+    }
+
+    .autocomplete-dropdown {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      right: 0;
+      max-height: 200px;
+      overflow-y: auto;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      box-shadow: var(--shadow-lg);
+      z-index: 100;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+    }
+
+    .autocomplete-dropdown::-webkit-scrollbar { width: 6px; }
+    .autocomplete-dropdown::-webkit-scrollbar-track { background: transparent; }
+    .autocomplete-dropdown::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    .autocomplete-option {
+      padding: 10px 14px;
+      font-size: 14px;
+      color: var(--text-primary);
+      cursor: pointer;
+      transition: background var(--transition-fast);
+      text-transform: capitalize;
+    }
+
+    .autocomplete-option:hover,
+    .autocomplete-option.highlighted {
+      background: rgba(99, 102, 241, 0.1);
+      color: var(--accent-hover);
+    }
+
+    .autocomplete-no-results {
+      padding: 12px 14px;
+      font-size: 13px;
+      color: var(--text-muted);
+      text-align: center;
+    }
+
+    /* Hide number input spinners */
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    input[type="number"] { -moz-appearance: textfield; }
+  </style>
+</head>
+<body>
+  <div class="app-container" id="app">
+    <!-- Header -->
+    <header class="header">
+      <div class="header__badge">
+        <span class="dot"></span>
+        AI-Powered Estimation
+      </div>
+      <h1 class="header__title">House Price Predictor</h1>
+      <p class="header__subtitle">
+        Enter your property details below to get an instant AI-powered price estimate
+        across 80+ Indian cities.
+      </p>
+    </header>
+
+    <form id="predict-form" novalidate>
+
+      <!-- ============================================================ -->
+      <!-- 1. LOCATION                                                    -->
+      <!-- ============================================================ -->
+      <div class="section-card">
+        <div class="section-card__header">
+          <div class="section-card__icon">📍</div>
+          <div>
+            <div class="section-card__title">Location</div>
+            <div class="section-card__desc">Where is the property located?</div>
+          </div>
+        </div>
+        <div class="form-grid">
+          <!-- Location (City) -->
+          <div class="form-group">
+            <label class="form-label" for="location">City <span class="required">*</span></label>
+            <div class="autocomplete-wrapper" id="location-autocomplete">
+              <input
+                type="text"
+                id="location"
+                name="location"
+                placeholder="e.g. mumbai, pune, bangalore"
+                autocomplete="off"
+                required
+              />
+              <!-- dropdown inserted by JS -->
+            </div>
+            <div class="validation-msg" id="location-error"></div>
+          </div>
+
+          <!-- Locality -->
+          <div class="form-group">
+            <label class="form-label" for="locality">Locality <span class="optional">(optional)</span></label>
+            <input type="text" id="locality" name="locality" placeholder="e.g. Andheri West" />
+          </div>
+
+          <!-- Location Raw (Full Address) -->
+          <div class="form-group full-width">
+            <label class="form-label" for="location_raw">Full Address / Project Name <span class="optional">(optional)</span></label>
+            <input type="text" id="location_raw" name="location_raw" placeholder="e.g. Lodha Palava, Dombivli East" />
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================================================ -->
+      <!-- 2. SIZE                                                        -->
+      <!-- ============================================================ -->
+      <div class="section-card">
+        <div class="section-card__header">
+          <div class="section-card__icon">📐</div>
+          <div>
+            <div class="section-card__title">Size & Area</div>
+            <div class="section-card__desc">Property dimensions</div>
+          </div>
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label" for="carpet_area">Carpet Area <span class="optional">(optional)</span></label>
+            <div class="input-wrapper has-unit">
+              <input type="number" id="carpet_area" name="carpet_area" placeholder="e.g. 850" min="0" step="1" />
+              <span class="unit">sqft</span>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="super_area">Super / Built-up Area <span class="optional">(optional)</span></label>
+            <div class="input-wrapper has-unit">
+              <input type="number" id="super_area" name="super_area" placeholder="e.g. 1100" min="0" step="1" />
+              <span class="unit">sqft</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================================================ -->
+      <!-- 3. LAYOUT                                                      -->
+      <!-- ============================================================ -->
+      <div class="section-card">
+        <div class="section-card__header">
+          <div class="section-card__icon">🏠</div>
+          <div>
+            <div class="section-card__title">Layout</div>
+            <div class="section-card__desc">Rooms, balconies & parking</div>
+          </div>
+        </div>
+        <div class="form-grid cols-3">
+          <!-- Bathrooms -->
+          <div class="form-group">
+            <label class="form-label" for="bathroom">Bathrooms <span class="required">*</span></label>
+            <div class="stepper">
+              <button type="button" onclick="stepValue('bathroom', -1)">−</button>
+              <input type="number" id="bathroom" name="bathroom" value="2" min="1" max="10" required />
+              <button type="button" onclick="stepValue('bathroom', 1)">+</button>
+            </div>
+            <div class="validation-msg" id="bathroom-error"></div>
+          </div>
+
+          <!-- Balconies -->
+          <div class="form-group">
+            <label class="form-label" for="balcony">Balconies <span class="optional">(optional)</span></label>
+            <div class="stepper">
+              <button type="button" onclick="stepValue('balcony', -1)">−</button>
+              <input type="number" id="balcony" name="balcony" value="1" min="0" max="10" />
+              <button type="button" onclick="stepValue('balcony', 1)">+</button>
+            </div>
+          </div>
+
+          <!-- Parking -->
+          <div class="form-group">
+            <label class="form-label" for="parking_count">Parking Spots <span class="optional">(optional)</span></label>
+            <div class="stepper">
+              <button type="button" onclick="stepValue('parking_count', -1)">−</button>
+              <input type="number" id="parking_count" name="parking_count" value="1" min="0" max="10" />
+              <button type="button" onclick="stepValue('parking_count', 1)">+</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================================================ -->
+      <!-- 4. BUILDING                                                    -->
+      <!-- ============================================================ -->
+      <div class="section-card">
+        <div class="section-card__header">
+          <div class="section-card__icon">🏢</div>
+          <div>
+            <div class="section-card__title">Building</div>
+            <div class="section-card__desc">Floor details</div>
+          </div>
+        </div>
+        <div class="form-grid cols-3">
+          <div class="form-group">
+            <label class="form-label" for="floor_number">Floor Number <span class="optional">(optional)</span></label>
+            <input type="number" id="floor_number" name="floor_number" placeholder="e.g. 5" min="0" step="1" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="building_height">Total Floors <span class="optional">(optional)</span></label>
+            <input type="number" id="building_height" name="building_height" placeholder="e.g. 20" min="0" step="1" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Floor Ratio <span class="optional">(auto)</span></label>
+            <div class="computed-badge" id="floor-ratio-display">
+              <span class="eq">= </span>
+              <span id="floor-ratio-value">—</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================================================ -->
+      <!-- 5. DETAILS                                                     -->
+      <!-- ============================================================ -->
+      <div class="section-card">
+        <div class="section-card__header">
+          <div class="section-card__icon">🏷️</div>
+          <div>
+            <div class="section-card__title">Property Details</div>
+            <div class="section-card__desc">Transaction type, furnishing & more</div>
+          </div>
+        </div>
+        <div class="form-grid">
+          <!-- Transaction -->
+          <div class="form-group">
+            <label class="form-label" for="transaction">Transaction Type <span class="required">*</span></label>
+            <select id="transaction" name="transaction" required>
+              <option value="" disabled selected>Select type</option>
+              <option value="Resale">Resale</option>
+              <option value="New Property">New Property</option>
+              <option value="Other">Other</option>
+            </select>
+            <div class="validation-msg" id="transaction-error"></div>
+          </div>
+
+          <!-- Furnishing -->
+          <div class="form-group">
+            <label class="form-label" for="furnishing">Furnishing <span class="optional">(optional)</span></label>
+            <select id="furnishing" name="furnishing">
+              <option value="">Not specified</option>
+              <option value="Furnished">Furnished</option>
+              <option value="Semi-Furnished">Semi-Furnished</option>
+              <option value="Unfurnished">Unfurnished</option>
+            </select>
+          </div>
+
+          <!-- Facing -->
+          <div class="form-group">
+            <label class="form-label" for="facing">Facing <span class="optional">(optional)</span></label>
+            <select id="facing" name="facing">
+              <option value="">Not specified</option>
+              <option value="East">East</option>
+              <option value="West">West</option>
+              <option value="North">North</option>
+              <option value="South">South</option>
+              <option value="North - East">North - East</option>
+              <option value="North - West">North - West</option>
+              <option value="South - East">South - East</option>
+              <option value="South -West">South - West</option>
+            </select>
+          </div>
+
+          <!-- Ownership -->
+          <div class="form-group">
+            <label class="form-label" for="ownership">Ownership <span class="optional">(optional)</span></label>
+            <select id="ownership" name="ownership">
+              <option value="">Not specified</option>
+              <option value="Freehold">Freehold</option>
+              <option value="Co-operative Society">Co-operative Society</option>
+              <option value="Leasehold">Leasehold</option>
+              <option value="Power Of Attorney">Power Of Attorney</option>
+            </select>
+          </div>
+
+          <!-- Overlooking -->
+          <div class="form-group full-width">
+            <label class="form-label" for="overlooking">Overlooking <span class="optional">(optional)</span></label>
+            <select id="overlooking" name="overlooking">
+              <option value="">Not specified</option>
+              <option value="Garden/Park">Garden / Park</option>
+              <option value="Main Road">Main Road</option>
+              <option value="Pool">Pool</option>
+              <option value="Garden/Park, Main Road">Garden / Park & Main Road</option>
+              <option value="Garden/Park, Pool">Garden / Park & Pool</option>
+              <option value="Main Road, Pool">Main Road & Pool</option>
+              <option value="Garden/Park, Main Road, Pool">Garden / Park, Main Road & Pool</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================================================ -->
+      <!-- SUBMIT                                                         -->
+      <!-- ============================================================ -->
+      <div class="submit-section">
+        <button type="submit" class="btn-predict" id="btn-predict">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+          </svg>
+          Get Price Estimate
+        </button>
+
+        <!-- Result -->
+        <div id="result-container"></div>
+      </div>
+    </form>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <p>Powered by a Random Forest model trained on Indian real-estate data.</p>
+      <p style="margin-top: 4px;">Built with ❤️ using FastAPI & Vanilla JS</p>
+    </footer>
+  </div>
+
+  <!-- ================================================================== -->
+  <!-- JavaScript                                                          -->
+  <!-- ================================================================== -->
+  <script>
+    // ------------------------------------------------------------------ //
+    // Configuration                                                       //
+    // ------------------------------------------------------------------ //
+    const API_BASE = window.location.origin;
+
+    const LOCATIONS = [
+      "agra","ahmadnagar","ahmedabad","allahabad","aurangabad","badlapur",
+      "bangalore","belgaum","bhiwadi","bhiwandi","bhopal","bhubaneswar",
+      "chandigarh","chennai","coimbatore","dehradun","durgapur","ernakulam",
+      "faridabad","ghaziabad","goa","greater-noida","guntur","gurgaon",
+      "guwahati","gwalior","haridwar","hyderabad","indore","jabalpur",
+      "jaipur","jamshedpur","jodhpur","kalyan","kanpur","kochi","kolkata",
+      "kozhikode","lucknow","ludhiana","madurai","mangalore","mohali",
+      "mumbai","mysore","nagpur","nashik","navi-mumbai","navsari","nellore",
+      "new-delhi","noida","palakkad","palghar","panchkula","patna",
+      "pondicherry","pune","raipur","rajahmundry","ranchi","satara","shimla",
+      "siliguri","solapur","sonipat","surat","thane","thrissur","tirupati",
+      "trichy","trivandrum","udaipur","udupi","vadodara","vapi","varanasi",
+      "vijayawada","visakhapatnam","vrindavan","zirakpur"
+    ];
+
+    // ------------------------------------------------------------------ //
+    // Autocomplete for Location                                           //
+    // ------------------------------------------------------------------ //
+    (function initAutocomplete() {
+      const wrapper = document.getElementById('location-autocomplete');
+      const input   = document.getElementById('location');
+      let dropdown  = null;
+      let highlighted = -1;
+
+      function createDropdown() {
+        removeDropdown();
+        dropdown = document.createElement('div');
+        dropdown.className = 'autocomplete-dropdown';
+        wrapper.appendChild(dropdown);
+      }
+
+      function removeDropdown() {
+        if (dropdown) { dropdown.remove(); dropdown = null; }
+        highlighted = -1;
+      }
+
+      function render(matches) {
+        createDropdown();
+        if (matches.length === 0) {
+          dropdown.innerHTML = '<div class="autocomplete-no-results">No matching cities</div>';
+          return;
+        }
+        matches.forEach((loc, i) => {
+          const opt = document.createElement('div');
+          opt.className = 'autocomplete-option';
+          opt.textContent = loc;
+          opt.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            input.value = loc;
+            removeDropdown();
+            clearError('location');
+          });
+          dropdown.appendChild(opt);
+        });
+      }
+
+      function updateHighlight() {
+        if (!dropdown) return;
+        const opts = dropdown.querySelectorAll('.autocomplete-option');
+        opts.forEach((o, i) => o.classList.toggle('highlighted', i === highlighted));
+        if (opts[highlighted]) opts[highlighted].scrollIntoView({ block: 'nearest' });
+      }
+
+      input.addEventListener('input', () => {
+        const q = input.value.trim().toLowerCase();
+        if (!q) { removeDropdown(); return; }
+        const matches = LOCATIONS.filter(l => l.includes(q)).slice(0, 15);
+        render(matches);
+      });
+
+      input.addEventListener('keydown', (e) => {
+        if (!dropdown) return;
+        const opts = dropdown.querySelectorAll('.autocomplete-option');
+        if (e.key === 'ArrowDown') { e.preventDefault(); highlighted = Math.min(highlighted + 1, opts.length - 1); updateHighlight(); }
+        else if (e.key === 'ArrowUp') { e.preventDefault(); highlighted = Math.max(highlighted - 1, 0); updateHighlight(); }
+        else if (e.key === 'Enter' && highlighted >= 0) { e.preventDefault(); input.value = opts[highlighted].textContent; removeDropdown(); clearError('location'); }
+        else if (e.key === 'Escape') { removeDropdown(); }
+      });
+
+      input.addEventListener('blur', () => setTimeout(removeDropdown, 150));
+    })();
+
+    // ------------------------------------------------------------------ //
+    // Stepper buttons                                                     //
+    // ------------------------------------------------------------------ //
+    function stepValue(fieldId, delta) {
+      const el = document.getElementById(fieldId);
+      let val = parseFloat(el.value) || 0;
+      val = Math.max(parseFloat(el.min) || 0, val + delta);
+      if (el.max) val = Math.min(parseFloat(el.max), val);
+      el.value = val;
+      el.dispatchEvent(new Event('input'));
+    }
+
+    // ------------------------------------------------------------------ //
+    // Auto-compute floor ratio                                            //
+    // ------------------------------------------------------------------ //
+    const floorNumberEl    = document.getElementById('floor_number');
+    const buildingHeightEl = document.getElementById('building_height');
+    const floorRatioVal    = document.getElementById('floor-ratio-value');
+
+    function updateFloorRatio() {
+      const fn = parseFloat(floorNumberEl.value);
+      const bh = parseFloat(buildingHeightEl.value);
+      if (!isNaN(fn) && !isNaN(bh) && bh > 0) {
+        floorRatioVal.textContent = (fn / bh).toFixed(3);
+      } else {
+        floorRatioVal.textContent = '—';
+      }
+    }
+
+    floorNumberEl.addEventListener('input', updateFloorRatio);
+    buildingHeightEl.addEventListener('input', updateFloorRatio);
+
+    // ------------------------------------------------------------------ //
+    // Validation                                                          //
+    // ------------------------------------------------------------------ //
+    function showError(fieldId, msg) {
+      const el = document.getElementById(fieldId);
+      const errEl = document.getElementById(fieldId + '-error');
+      if (el) el.classList.add('error');
+      if (errEl) errEl.textContent = msg;
+    }
+
+    function clearError(fieldId) {
+      const el = document.getElementById(fieldId);
+      const errEl = document.getElementById(fieldId + '-error');
+      if (el) el.classList.remove('error');
+      if (errEl) errEl.textContent = '';
+    }
+
+    function clearAllErrors() {
+      document.querySelectorAll('.error').forEach(el => el.classList.remove('error'));
+      document.querySelectorAll('.validation-msg').forEach(el => el.textContent = '');
+    }
+
+    function validate() {
+      clearAllErrors();
+      let valid = true;
+
+      const location = document.getElementById('location').value.trim();
+      if (!location) { showError('location', 'City is required'); valid = false; }
+
+      const transaction = document.getElementById('transaction').value;
+      if (!transaction) { showError('transaction', 'Select a transaction type'); valid = false; }
+
+      const bathroom = parseFloat(document.getElementById('bathroom').value);
+      if (isNaN(bathroom) || bathroom < 1) { showError('bathroom', 'At least 1 bathroom required'); valid = false; }
+
+      return valid;
+    }
+
+    // Clear errors on input
+    ['location', 'transaction', 'bathroom'].forEach(id => {
+      const el = document.getElementById(id);
+      el.addEventListener('input', () => clearError(id));
+      el.addEventListener('change', () => clearError(id));
+    });
+
+    // ------------------------------------------------------------------ //
+    // Collect form data                                                   //
+    // ------------------------------------------------------------------ //
+    function collectFormData() {
+      const str = (id) => {
+        const v = document.getElementById(id).value.trim();
+        return v || null;
+      };
+      const num = (id) => {
+        const v = document.getElementById(id).value;
+        const n = parseFloat(v);
+        return isNaN(n) ? null : n;
+      };
+
+      const fn = num('floor_number');
+      const bh = num('building_height');
+      let floorRatio = null;
+      if (fn !== null && bh !== null && bh > 0) {
+        floorRatio = fn / bh;
+      }
+
+      return {
+        location: str('location'),
+        locality: str('locality'),
+        location_raw: str('location_raw'),
+        transaction: str('transaction'),
+        furnishing: str('furnishing'),
+        facing: str('facing'),
+        overlooking: str('overlooking'),
+        ownership: str('ownership'),
+        carpet_area: num('carpet_area'),
+        super_area: num('super_area'),
+        bathroom: num('bathroom'),
+        balcony: num('balcony'),
+        parking_count: num('parking_count'),
+        floor_number: fn,
+        building_height: bh,
+        floor_ratio: floorRatio,
+      };
+    }
+
+    // ------------------------------------------------------------------ //
+    // Format price in Indian style                                        //
+    // ------------------------------------------------------------------ //
+    function formatIndianPrice(price) {
+      if (price >= 1e7) {
+        return '₹' + (price / 1e7).toFixed(2) + ' Cr';
+      } else if (price >= 1e5) {
+        return '₹' + (price / 1e5).toFixed(2) + ' Lakh';
+      }
+      return '₹' + price.toLocaleString('en-IN');
+    }
+
+    function formatRawPrice(price) {
+      return '₹' + Math.round(price).toLocaleString('en-IN');
+    }
+
+    // ------------------------------------------------------------------ //
+    // Render result                                                       //
+    // ------------------------------------------------------------------ //
+    function renderResult(data) {
+      const container = document.getElementById('result-container');
+      container.innerHTML = `
+        <div class="result-card result-card--success">
+          <div class="result-card__inner">
+            <div class="result-card__label">Estimated Property Price</div>
+            <div class="result-card__price">${data.formatted_price}</div>
+            <div class="result-card__raw">${formatRawPrice(data.predicted_price)}</div>
+          </div>
+        </div>
+      `;
+      container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function renderError(msg) {
+      const container = document.getElementById('result-container');
+      container.innerHTML = `
+        <div class="result-card result-card--error">
+          <div class="result-card__inner">
+            <div class="result-card__label">Prediction Failed</div>
+            <div class="result-card__error-text">${msg}</div>
+          </div>
+        </div>
+      `;
+    }
+
+    // ------------------------------------------------------------------ //
+    // Submit handler                                                      //
+    // ------------------------------------------------------------------ //
+    const form = document.getElementById('predict-form');
+    const btn  = document.getElementById('btn-predict');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!validate()) return;
+
+      // Loading state
+      btn.disabled = true;
+      btn.innerHTML = '<div class="spinner"></div> Calculating…';
+      document.getElementById('result-container').innerHTML = '';
+
+      const payload = collectFormData();
+
+      try {
+        const res = await fetch(`${API_BASE}/predict`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({ detail: 'Unknown error' }));
+          throw new Error(err.detail || `HTTP ${res.status}`);
+        }
+
+        const data = await res.json();
+        renderResult(data);
+      } catch (err) {
+        renderError(err.message || 'Something went wrong. Please try again.');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+          </svg>
+          Get Price Estimate
+        `;
+      }
+    });
+  </script>
+</body>
 </html>
